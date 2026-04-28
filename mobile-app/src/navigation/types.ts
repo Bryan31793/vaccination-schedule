@@ -1,0 +1,56 @@
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import type {
+  CompositeScreenProps,
+  NavigatorScreenParams,
+} from '@react-navigation/native';
+
+// ── Stack de Pacientes ────────────────────────────────────────────
+export type PacientesStackParamList = {
+  PacientesList: undefined;
+  PacienteDetalle: { curp: string };
+  RegistrarPaciente: undefined;
+};
+
+// ── Stack de Brotes ───────────────────────────────────────────────
+export type BrotesStackParamList = {
+  BrotesList: undefined;
+  AsistenteIA: { curp?: string };
+};
+
+// ── Bottom Tabs ───────────────────────────────────────────────────
+export type RootTabParamList = {
+  Home: undefined;
+  Pacientes: NavigatorScreenParams<PacientesStackParamList>;
+  Vacunar: undefined;
+  Brotes: NavigatorScreenParams<BrotesStackParamList>;
+};
+
+// ── Screen Props helpers ──────────────────────────────────────────
+export type HomeScreenProps = BottomTabScreenProps<RootTabParamList, 'Home'>;
+export type VacunarScreenProps = BottomTabScreenProps<RootTabParamList, 'Vacunar'>;
+
+export type PacientesListScreenProps = CompositeScreenProps<
+  NativeStackScreenProps<PacientesStackParamList, 'PacientesList'>,
+  BottomTabScreenProps<RootTabParamList>
+>;
+
+export type PacienteDetalleScreenProps = CompositeScreenProps<
+  NativeStackScreenProps<PacientesStackParamList, 'PacienteDetalle'>,
+  BottomTabScreenProps<RootTabParamList>
+>;
+
+export type RegistrarPacienteScreenProps = CompositeScreenProps<
+  NativeStackScreenProps<PacientesStackParamList, 'RegistrarPaciente'>,
+  BottomTabScreenProps<RootTabParamList>
+>;
+
+export type BrotesListScreenProps = CompositeScreenProps<
+  NativeStackScreenProps<BrotesStackParamList, 'BrotesList'>,
+  BottomTabScreenProps<RootTabParamList>
+>;
+
+export type AsistenteIAScreenProps = CompositeScreenProps<
+  NativeStackScreenProps<BrotesStackParamList, 'AsistenteIA'>,
+  BottomTabScreenProps<RootTabParamList>
+>;
