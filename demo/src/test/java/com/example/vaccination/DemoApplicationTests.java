@@ -1,13 +1,5 @@
 package com.example.vaccination;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-
-@SpringBootTest
-class DemoApplicationTests {
-
-	@Test
-	void contextLoads() {
-	}
-
-}
+// Clase de test original eliminada.
+// El proyecto migró al paquete mx.salud.vacunacion.
+// Ver: VacunacionIntegrationTest
