@@ -129,3 +129,11 @@ export interface ConsultaLlmRequest {
   curpPaciente: string;
   pregunta: string;
 }
+
+export interface ChatbotMensajeRequest {
+  mensaje: string;
+}
+
+export interface ChatbotMensajeResponse {
+  respuesta: string;
+}

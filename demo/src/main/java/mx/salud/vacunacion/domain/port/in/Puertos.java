@@ -62,12 +62,28 @@ public final class Puertos {
         List<AlertaBrote> alertasActivas();
     }
 
-    // ── 6. Consultar LLM (lenguaje natural) ──────────────────────────────────
+    // ── 6. Consultar LLM (lenguaje natural, específico por paciente) ─────────
 
     public interface ConsultarLlm {
         record Pregunta(String curpPaciente, String textoPregunta) {}
         record Respuesta(String texto, boolean generadaPorIa) {}
 
         Respuesta consultar(Pregunta pregunta);
+    }
+
+    // ── 7. Ejecutar Simulación Epidemiológica ─────────────────────────────────
+
+    public interface EjecutarSimulacion {
+        void ejecutar();
+        byte[] obtenerVideo();
+    }
+
+    // ── 8. Chatbot General (SQL + IA, sin necesidad de CURP) ─────────────────
+
+    public interface ConsultarChatbot {
+        record Mensaje(String texto) {}
+        record Respuesta(String texto) {}
+
+        Respuesta procesar(Mensaje mensaje);
     }
 }

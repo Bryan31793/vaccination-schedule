@@ -199,4 +199,52 @@ public final class Controllers {
                     respuesta.texto(), respuesta.generadaPorIa());
         }
     }
+
+    // ── 7. Simulación Epidemiológica ─────────────────────────────────────────
+
+    @RestController
+    @RequestMapping("/api/simulacion")
+    public static class SimulacionController {
+
+        private final Puertos.EjecutarSimulacion ejecutarSimulacion;
+
+        public SimulacionController(Puertos.EjecutarSimulacion ejecutarSimulacion) {
+            this.ejecutarSimulacion = ejecutarSimulacion;
+        }
+
+        @PostMapping("/ejecutar")
+        public ResponseEntity<Void> ejecutar() {
+            ejecutarSimulacion.ejecutar();
+            return ResponseEntity.ok().build();
+        }
+
+        @GetMapping("/video")
+        public ResponseEntity<byte[]> obtenerVideo() {
+            byte[] video = ejecutarSimulacion.obtenerVideo();
+            return ResponseEntity.ok()
+                    .header("Content-Type", "video/mp4")
+                    .body(video);
+        }
+    }
+
+    // ── 8. Chatbot General ────────────────────────────────────────────────────
+
+    @RestController
+    @RequestMapping("/api/chatbot")
+    public static class ChatbotController {
+
+        private final Puertos.ConsultarChatbot consultarChatbot;
+
+        public ChatbotController(Puertos.ConsultarChatbot consultarChatbot) {
+            this.consultarChatbot = consultarChatbot;
+        }
+
+        @PostMapping
+        public Dtos.ChatbotMensajeResponse chat(
+                @Valid @RequestBody Dtos.ChatbotMensajeRequest req) {
+            var respuesta = consultarChatbot.procesar(
+                    new Puertos.ConsultarChatbot.Mensaje(req.mensaje()));
+            return new Dtos.ChatbotMensajeResponse(respuesta.texto());
+        }
+    }
 }
