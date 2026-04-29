@@ -86,4 +86,10 @@ public final class Repositorios {
     public interface DomainEventPublisher {
         void publicar(BroteDetectadoEvent evento);
     }
+
+    // ── 9. Puerto Chatbot (Ollama + SQL generation) ───────────────────────────
+
+    public interface ChatbotPort {
+        String procesarMensaje(String mensaje);
+    }
 }

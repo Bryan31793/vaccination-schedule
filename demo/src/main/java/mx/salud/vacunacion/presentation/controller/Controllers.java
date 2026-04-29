@@ -226,4 +226,25 @@ public final class Controllers {
                     .body(video);
         }
     }
+
+    // ── 8. Chatbot General ────────────────────────────────────────────────────
+
+    @RestController
+    @RequestMapping("/api/chatbot")
+    public static class ChatbotController {
+
+        private final Puertos.ConsultarChatbot consultarChatbot;
+
+        public ChatbotController(Puertos.ConsultarChatbot consultarChatbot) {
+            this.consultarChatbot = consultarChatbot;
+        }
+
+        @PostMapping
+        public Dtos.ChatbotMensajeResponse chat(
+                @Valid @RequestBody Dtos.ChatbotMensajeRequest req) {
+            var respuesta = consultarChatbot.procesar(
+                    new Puertos.ConsultarChatbot.Mensaje(req.mensaje()));
+            return new Dtos.ChatbotMensajeResponse(respuesta.texto());
+        }
+    }
 }
