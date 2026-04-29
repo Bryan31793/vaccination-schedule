@@ -20,6 +20,7 @@ import { VacunarScreen } from '../screens/Vacunar/VacunarScreen';
 import { BrotesScreen } from '../screens/Brotes/BrotesScreen';
 import { AsistenteIAScreen } from '../screens/Brotes/AsistenteIAScreen';
 import { SimulacionScreen } from '../screens/Simulacion/SimulacionScreen';
+import { ChatbotScreen } from '../screens/Chatbot/ChatbotScreen';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const PacientesStack = createNativeStackNavigator<PacientesStackParamList>();
@@ -91,6 +92,7 @@ const tabIcons: Record<
   Vacunar: { focused: 'medkit', unfocused: 'medkit-outline' },
   Brotes: { focused: 'warning', unfocused: 'warning-outline' },
   Simulacion: { focused: 'stats-chart', unfocused: 'stats-chart-outline' },
+  Chatbot: { focused: 'chatbubbles', unfocused: 'chatbubbles-outline' },
 };
 
 // ── Main Navigator ───────────────────────────────────────────────────
@@ -101,7 +103,7 @@ export const AppNavigator = () => {
       <Tab.Navigator
         screenOptions={({ route }) => ({
           headerShown: false,
-          tabBarIcon: ({ focused, color, size }) => {
+          tabBarIcon: ({ focused, color }) => {
             const icons = tabIcons[route.name];
             return (
               <View style={focused ? styles.activeIconWrap : undefined}>
@@ -144,6 +146,11 @@ export const AppNavigator = () => {
           name="Simulacion"
           component={SimulacionScreen}
           options={{ tabBarLabel: 'Simulación' }}
+        />
+        <Tab.Screen
+          name="Chatbot"
+          component={ChatbotScreen}
+          options={{ tabBarLabel: 'Chatbot' }}
         />
       </Tab.Navigator>
     </NavigationContainer>

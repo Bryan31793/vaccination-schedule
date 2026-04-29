@@ -59,6 +59,10 @@ public final class Dtos {
             @NotBlank @Size(max = 500) String pregunta
     ) {}
 
+    public record ChatbotMensajeRequest(
+            @NotBlank @Size(max = 500) String mensaje
+    ) {}
+
     // ════════════════════════════════════════════════════════════════════
     // RESPONSE DTOs
     // ════════════════════════════════════════════════════════════════════
@@ -159,6 +163,10 @@ public final class Dtos {
             String pregunta,
             String respuesta,
             boolean generadaPorIa
+    ) {}
+
+    public record ChatbotMensajeResponse(
+            String respuesta
     ) {}
 
     public record ErrorResponse(
