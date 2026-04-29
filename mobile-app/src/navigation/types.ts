@@ -5,6 +5,12 @@ import type {
   NavigatorScreenParams,
 } from '@react-navigation/native';
 
+// ── Stack de Home ─────────────────────────────────────────────────
+export type HomeStackParamList = {
+  HomeMain: undefined;
+  Chatbot: undefined;
+};
+
 // ── Stack de Pacientes ────────────────────────────────────────────
 export type PacientesStackParamList = {
   PacientesList: undefined;
@@ -20,19 +26,26 @@ export type BrotesStackParamList = {
 
 // ── Bottom Tabs ───────────────────────────────────────────────────
 export type RootTabParamList = {
-  Home: undefined;
+  Home: NavigatorScreenParams<HomeStackParamList>;
   Pacientes: NavigatorScreenParams<PacientesStackParamList>;
   Vacunar: undefined;
   Brotes: NavigatorScreenParams<BrotesStackParamList>;
   Simulacion: undefined;
-  Chatbot: undefined;
 };
 
 // ── Screen Props helpers ──────────────────────────────────────────
-export type HomeScreenProps = BottomTabScreenProps<RootTabParamList, 'Home'>;
 export type VacunarScreenProps = BottomTabScreenProps<RootTabParamList, 'Vacunar'>;
 export type SimulacionScreenProps = BottomTabScreenProps<RootTabParamList, 'Simulacion'>;
-export type ChatbotScreenProps = BottomTabScreenProps<RootTabParamList, 'Chatbot'>;
+
+export type HomeScreenProps = CompositeScreenProps<
+  NativeStackScreenProps<HomeStackParamList, 'HomeMain'>,
+  BottomTabScreenProps<RootTabParamList>
+>;
+
+export type ChatbotScreenProps = CompositeScreenProps<
+  NativeStackScreenProps<HomeStackParamList, 'Chatbot'>,
+  BottomTabScreenProps<RootTabParamList>
+>;
 
 export type PacientesListScreenProps = CompositeScreenProps<
   NativeStackScreenProps<PacientesStackParamList, 'PacientesList'>,

@@ -13,8 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useMutation } from '@tanstack/react-query';
-import { ScreenWrapper } from '../../components/ui';
-import { llmApi } from '../../api/endpoints/llm';
+import { chatbotApi } from '../../api/endpoints/chatbot';
 import { colors, typography, borderRadius, shadows } from '../../theme';
 import type { AsistenteIAScreenProps } from '../../navigation/types';
 
@@ -22,27 +21,21 @@ interface ChatMessage {
   id: string;
   text: string;
   isUser: boolean;
-  isAI?: boolean;
 }
 
-export const AsistenteIAScreen: React.FC<AsistenteIAScreenProps> = ({
-  route,
-}) => {
-  const curp = route.params?.curp || '';
+export const AsistenteIAScreen: React.FC<AsistenteIAScreenProps> = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '0',
-      text: '¡Hola! 👋 Soy tu asistente de vacunación con IA. Puedo responder preguntas sobre esquemas de vacunación, efectos secundarios y recomendaciones. ¿En qué puedo ayudarte?',
+      text: '¡Hola! 👋 Soy tu asistente de vacunación con IA. Puedo responder preguntas sobre esquemas de vacunación, efectos secundarios, pacientes registrados y más. ¿En qué puedo ayudarte?',
       isUser: false,
-      isAI: true,
     },
   ]);
   const [input, setInput] = useState('');
-  const [curpInput, setCurpInput] = useState(curp);
   const flatListRef = useRef<FlatList>(null);
 
   const mutation = useMutation({
-    mutationFn: llmApi.consultar,
+    mutationFn: chatbotApi.enviarMensaje,
     onSuccess: (data) => {
       setMessages((prev) => [
         ...prev,
@@ -50,16 +43,16 @@ export const AsistenteIAScreen: React.FC<AsistenteIAScreenProps> = ({
           id: Date.now().toString(),
           text: data.respuesta,
           isUser: false,
-          isAI: data.generadaPorIa,
         },
       ]);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     },
     onError: () => {
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
-          text: 'Lo siento, hubo un error al procesar tu consulta. Intenta de nuevo.',
+          text: 'No se pudo conectar con el asistente. Verifica que el servidor y Ollama estén corriendo.',
           isUser: false,
         },
       ]);
@@ -67,21 +60,15 @@ export const AsistenteIAScreen: React.FC<AsistenteIAScreenProps> = ({
   });
 
   const handleSend = () => {
-    if (!input.trim() || !curpInput.trim()) return;
+    const texto = input.trim();
+    if (!texto || mutation.isPending) return;
 
-    const userMsg: ChatMessage = {
-      id: Date.now().toString(),
-      text: input,
-      isUser: true,
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
-    mutation.mutate({
-      curpPaciente: curpInput.toUpperCase(),
-      pregunta: input,
-    });
+    setMessages((prev) => [
+      ...prev,
+      { id: Date.now().toString(), text: texto, isUser: true },
+    ]);
+    mutation.mutate({ mensaje: texto });
     setInput('');
-
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
@@ -110,102 +97,77 @@ export const AsistenteIAScreen: React.FC<AsistenteIAScreenProps> = ({
   );
 
   return (
-    <ScreenWrapper gradient={false}>
+    <View style={styles.root}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={90}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.kav}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        <View style={styles.container}>
-          {/* CURP Input */}
-          {!curp && (
-            <View style={styles.curpBar}>
-              <Ionicons name="card" size={18} color={colors.neutral[400]} />
-              <TextInput
-                style={styles.curpInput}
-                placeholder="CURP del paciente"
-                placeholderTextColor={colors.neutral[400]}
-                value={curpInput}
-                onChangeText={(v) => setCurpInput(v.toUpperCase())}
-                maxLength={18}
-                autoCapitalize="characters"
-              />
-            </View>
-          )}
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={(item) => item.id}
+          renderItem={renderMessage}
+          contentContainerStyle={styles.messageList}
+          showsVerticalScrollIndicator={false}
+          style={styles.list}
+          onContentSizeChange={() =>
+            flatListRef.current?.scrollToEnd({ animated: true })
+          }
+          ListFooterComponent={
+            mutation.isPending ? (
+              <View style={styles.typingIndicator}>
+                <ActivityIndicator size="small" color={colors.primary[500]} />
+                <Text style={styles.typingText}>El asistente está pensando...</Text>
+              </View>
+            ) : null
+          }
+        />
 
-          {/* Messages */}
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            keyExtractor={(item) => item.id}
-            renderItem={renderMessage}
-            contentContainerStyle={styles.messageList}
-            showsVerticalScrollIndicator={false}
-            onContentSizeChange={() =>
-              flatListRef.current?.scrollToEnd({ animated: true })
-            }
-            ListFooterComponent={
-              mutation.isPending ? (
-                <View style={styles.typingIndicator}>
-                  <ActivityIndicator
-                    size="small"
-                    color={colors.primary[500]}
-                  />
-                  <Text style={styles.typingText}>
-                    El asistente está pensando...
-                  </Text>
-                </View>
-              ) : null
-            }
+        <View style={styles.inputBar}>
+          <TextInput
+            style={styles.chatInput}
+            placeholder="Escribe tu pregunta..."
+            placeholderTextColor={colors.neutral[400]}
+            value={input}
+            onChangeText={setInput}
+            multiline
+            maxLength={500}
+            onSubmitEditing={handleSend}
           />
-
-          {/* Input Bar */}
-          <View style={styles.inputBar}>
-            <TextInput
-              style={styles.chatInput}
-              placeholder="Escribe tu pregunta..."
-              placeholderTextColor={colors.neutral[400]}
-              value={input}
-              onChangeText={setInput}
-              multiline
-              maxLength={500}
-            />
-            <TouchableOpacity
-              style={[
-                styles.sendBtn,
-                (!input.trim() || !curpInput.trim()) && styles.sendBtnDisabled,
-              ]}
-              onPress={handleSend}
-              disabled={!input.trim() || !curpInput.trim() || mutation.isPending}
-            >
-              <Ionicons name="send" size={20} color="#FFF" />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={[
+              styles.sendBtn,
+              (!input.trim() || mutation.isPending) && styles.sendBtnDisabled,
+            ]}
+            onPress={handleSend}
+            disabled={!input.trim() || mutation.isPending}
+          >
+            <Ionicons name="send" size={20} color="#FFF" />
+          </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </ScreenWrapper>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  curpBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: colors.neutral[50],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.neutral[200],
-  },
-  curpInput: {
+  root: {
     flex: 1,
-    fontSize: 14,
-    color: colors.neutral[800],
-    fontWeight: '500',
+    backgroundColor: colors.background.primary,
+    marginBottom: 90,
   },
-  messageList: { padding: 16, paddingBottom: 8 },
+  kav: {
+    flex: 1,
+  },
+  list: {
+    flex: 1,
+  },
+  messageList: {
+    padding: 16,
+    paddingBottom: 8,
+    flexGrow: 1,
+  },
   messageBubble: {
     maxWidth: '85%',
     borderRadius: borderRadius.lg,
@@ -270,6 +232,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingHorizontal: 12,
     paddingVertical: 10,
+    paddingBottom: 12,
     backgroundColor: colors.neutral[0],
     borderTopWidth: 1,
     borderTopColor: colors.neutral[200],

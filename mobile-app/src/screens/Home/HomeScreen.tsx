@@ -98,12 +98,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             icon="chatbubble-ellipses"
             label="Consultar Asistente IA"
             color={colors.accent.purple}
-            onPress={() =>
-              navigation.navigate('Brotes', {
-                screen: 'AsistenteIA',
-                params: {},
-              })
-            }
+            onPress={() => navigation.navigate('Chatbot')}
           />
         </GlassCard>
       </ScrollView>

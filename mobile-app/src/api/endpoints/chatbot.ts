@@ -3,7 +3,7 @@ import type { ChatbotMensajeRequest, ChatbotMensajeResponse } from '../../types'
 
 export const chatbotApi = {
   enviarMensaje: async (request: ChatbotMensajeRequest): Promise<ChatbotMensajeResponse> => {
-    const { data } = await apiClient.post('/api/chatbot', request);
+    const { data } = await apiClient.post('/api/chatbot', request, { timeout: 120000 });
     return data;
   },
 };

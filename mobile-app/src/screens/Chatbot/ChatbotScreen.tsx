@@ -9,7 +9,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -86,19 +85,11 @@ export const ChatbotScreen: React.FC = () => {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <LinearGradient colors={['#0F5080', '#1A8AD4']} style={styles.header}>
-        <Ionicons name="chatbubbles" size={22} color="#FFF" />
-        <Text style={styles.headerTitle}>Chatbot IA</Text>
-        <View style={styles.headerBadge}>
-          <Text style={styles.headerBadgeText}>Ollama</Text>
-        </View>
-      </LinearGradient>
-
+    <View style={styles.safeArea}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.flex}
-        keyboardVerticalOffset={0}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.body}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <FlatList
           ref={flatListRef}
@@ -107,6 +98,7 @@ export const ChatbotScreen: React.FC = () => {
           renderItem={renderMessage}
           contentContainerStyle={styles.messageList}
           showsVerticalScrollIndicator={false}
+          style={styles.messagesFlex}
           onContentSizeChange={() =>
             flatListRef.current?.scrollToEnd({ animated: true })
           }
@@ -130,10 +122,12 @@ export const ChatbotScreen: React.FC = () => {
             multiline
             maxLength={500}
             onSubmitEditing={handleSend}
-            returnKeyType="send"
           />
           <TouchableOpacity
-            style={[styles.sendBtn, (!input.trim() || mutation.isPending) && styles.sendBtnDisabled]}
+            style={[
+              styles.sendBtn,
+              (!input.trim() || mutation.isPending) && styles.sendBtnDisabled,
+            ]}
             onPress={handleSend}
             disabled={!input.trim() || mutation.isPending}
           >
@@ -141,37 +135,28 @@ export const ChatbotScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.background.primary },
-  flex: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+    marginBottom: 90,
   },
-  headerTitle: {
-    ...typography.h3,
-    color: '#FFF',
+  body: {
+    flex: 1,
+    flexDirection: 'column',
+  },
+  messagesFlex: {
     flex: 1,
   },
-  headerBadge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+  messageList: {
+    padding: 16,
+    paddingBottom: 8,
+    flexGrow: 1,
   },
-  headerBadgeText: {
-    color: '#FFF',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  messageList: { padding: 16, paddingBottom: 12 },
   bubble: {
     maxWidth: '85%',
     borderRadius: borderRadius.lg,
@@ -228,6 +213,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingHorizontal: 12,
     paddingVertical: 10,
+    paddingBottom: 12,
     backgroundColor: colors.neutral[0],
     borderTopWidth: 1,
     borderTopColor: colors.neutral[200],
