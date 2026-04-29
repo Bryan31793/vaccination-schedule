@@ -7,12 +7,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, shadows } from '../theme';
 import type {
   RootTabParamList,
+  HomeStackParamList,
   PacientesStackParamList,
   BrotesStackParamList,
 } from './types';
 
 // ── Screens ──────────────────────────────────────────────────────────
 import { HomeScreen } from '../screens/Home/HomeScreen';
+import { ChatbotScreen } from '../screens/Chatbot/ChatbotScreen';
 import { PacientesListScreen } from '../screens/Pacientes/PacientesListScreen';
 import { PacienteDetalleScreen } from '../screens/Pacientes/PacienteDetalleScreen';
 import { RegistrarPacienteScreen } from '../screens/Pacientes/RegistrarPacienteScreen';
@@ -20,20 +22,33 @@ import { VacunarScreen } from '../screens/Vacunar/VacunarScreen';
 import { BrotesScreen } from '../screens/Brotes/BrotesScreen';
 import { AsistenteIAScreen } from '../screens/Brotes/AsistenteIAScreen';
 import { SimulacionScreen } from '../screens/Simulacion/SimulacionScreen';
-import { ChatbotScreen } from '../screens/Chatbot/ChatbotScreen';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
+const HomeStack = createNativeStackNavigator<HomeStackParamList>();
 const PacientesStack = createNativeStackNavigator<PacientesStackParamList>();
 const BrotesStack = createNativeStackNavigator<BrotesStackParamList>();
 
 // ── Stack Navigators ─────────────────────────────────────────────────
 
+const HomeStackNavigator = () => (
+  <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+    <HomeStack.Screen name="HomeMain" component={HomeScreen} />
+    <HomeStack.Screen
+      name="Chatbot"
+      component={ChatbotScreen}
+      options={{
+        headerShown: true,
+        headerTitle: 'Asistente IA',
+        headerTintColor: colors.primary[600],
+        headerStyle: { backgroundColor: colors.background.primary },
+        headerShadowVisible: false,
+      }}
+    />
+  </HomeStack.Navigator>
+);
+
 const PacientesStackNavigator = () => (
-  <PacientesStack.Navigator
-    screenOptions={{
-      headerShown: false,
-    }}
-  >
+  <PacientesStack.Navigator screenOptions={{ headerShown: false }}>
     <PacientesStack.Screen name="PacientesList" component={PacientesListScreen} />
     <PacientesStack.Screen
       name="PacienteDetalle"
@@ -61,11 +76,7 @@ const PacientesStackNavigator = () => (
 );
 
 const BrotesStackNavigator = () => (
-  <BrotesStack.Navigator
-    screenOptions={{
-      headerShown: false,
-    }}
-  >
+  <BrotesStack.Navigator screenOptions={{ headerShown: false }}>
     <BrotesStack.Screen name="BrotesList" component={BrotesScreen} />
     <BrotesStack.Screen
       name="AsistenteIA"
@@ -92,7 +103,6 @@ const tabIcons: Record<
   Vacunar: { focused: 'medkit', unfocused: 'medkit-outline' },
   Brotes: { focused: 'warning', unfocused: 'warning-outline' },
   Simulacion: { focused: 'stats-chart', unfocused: 'stats-chart-outline' },
-  Chatbot: { focused: 'chatbubbles', unfocused: 'chatbubbles-outline' },
 };
 
 // ── Main Navigator ───────────────────────────────────────────────────
@@ -124,7 +134,7 @@ export const AppNavigator = () => {
       >
         <Tab.Screen
           name="Home"
-          component={HomeScreen}
+          component={HomeStackNavigator}
           options={{ tabBarLabel: 'Inicio' }}
         />
         <Tab.Screen
@@ -146,11 +156,6 @@ export const AppNavigator = () => {
           name="Simulacion"
           component={SimulacionScreen}
           options={{ tabBarLabel: 'Simulación' }}
-        />
-        <Tab.Screen
-          name="Chatbot"
-          component={ChatbotScreen}
-          options={{ tabBarLabel: 'Chatbot' }}
         />
       </Tab.Navigator>
     </NavigationContainer>
