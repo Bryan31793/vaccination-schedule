@@ -32,12 +32,14 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Actuator y H2 console sin autenticación en dev
                 .requestMatchers("/h2-console/**", "/actuator/**").permitAll()
-                // Lectura de catálogo público
-                .requestMatchers(HttpMethod.GET, "/api/vacunas/**").permitAll()
+                // Lectura de catálogo público y video de simulación
+                .requestMatchers(HttpMethod.GET, "/api/vacunas/**", "/api/simulacion/video").permitAll()
                 // Operaciones de escritura requieren rol ENFERMERO o superior
                 .requestMatchers(HttpMethod.POST, "/api/vacunaciones/**").hasAnyRole("ENFERMERO", "MEDICO", "ADMIN")
                 // Alertas de brote solo para personal médico y admin
                 .requestMatchers("/api/brotes/**").hasAnyRole("MEDICO", "ADMIN")
+                // Simulación para personal médico y admin
+                .requestMatchers("/api/simulacion/**").hasAnyRole("MEDICO", "ADMIN")
                 // El resto requiere autenticación
                 .anyRequest().authenticated()
             )

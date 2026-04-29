@@ -32,11 +32,14 @@ export const setCredentials = (username: string, password: string) => {
   currentCredentials = { username, password };
 };
 
+export const getAuthHeader = () => {
+  const { username, password } = currentCredentials;
+  return `Basic ${btoa(`${username}:${password}`)}`;
+};
+
 // Interceptor para inyectar HTTP Basic Auth en cada request
 apiClient.interceptors.request.use((config) => {
-  const { username, password } = currentCredentials;
-  const token = btoa(`${username}:${password}`);
-  config.headers.Authorization = `Basic ${token}`;
+  config.headers.Authorization = getAuthHeader();
   return config;
 });
 

@@ -70,4 +70,11 @@ public final class Puertos {
 
         Respuesta consultar(Pregunta pregunta);
     }
+
+    // ── 7. Ejecutar Simulación Epidemiológica ──────────────────────────────
+
+    public interface EjecutarSimulacion {
+        void ejecutar();
+        byte[] obtenerVideo();
+    }
 }

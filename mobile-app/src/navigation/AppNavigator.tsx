@@ -19,6 +19,7 @@ import { RegistrarPacienteScreen } from '../screens/Pacientes/RegistrarPacienteS
 import { VacunarScreen } from '../screens/Vacunar/VacunarScreen';
 import { BrotesScreen } from '../screens/Brotes/BrotesScreen';
 import { AsistenteIAScreen } from '../screens/Brotes/AsistenteIAScreen';
+import { SimulacionScreen } from '../screens/Simulacion/SimulacionScreen';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const PacientesStack = createNativeStackNavigator<PacientesStackParamList>();
@@ -89,6 +90,7 @@ const tabIcons: Record<
   Pacientes: { focused: 'people', unfocused: 'people-outline' },
   Vacunar: { focused: 'medkit', unfocused: 'medkit-outline' },
   Brotes: { focused: 'warning', unfocused: 'warning-outline' },
+  Simulacion: { focused: 'stats-chart', unfocused: 'stats-chart-outline' },
 };
 
 // ── Main Navigator ───────────────────────────────────────────────────
@@ -137,6 +139,11 @@ export const AppNavigator = () => {
           name="Brotes"
           component={BrotesStackNavigator}
           options={{ tabBarLabel: 'Brotes' }}
+        />
+        <Tab.Screen
+          name="Simulacion"
+          component={SimulacionScreen}
+          options={{ tabBarLabel: 'Simulación' }}
         />
       </Tab.Navigator>
     </NavigationContainer>
