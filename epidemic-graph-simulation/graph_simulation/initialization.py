@@ -1,4 +1,4 @@
-from .config import SimulationParams, STATE_INFECTED, STATE_SUSCEPTIBLE, STATE_RECOVERED
+from .config import SimulationParams, STATE_INFECTED, STATE_SUSCEPTIBLE, STATE_RECOVERED, STATE_VACCINATED, STATE_DEAD
 import numpy as np
 from typing import Tuple, List
 from scipy.spatial import cKDTree
@@ -106,9 +106,59 @@ def apply_movement(
     return pos, vel
 
 
-def get_sir_counts(estado: np.ndarray) -> Tuple[int, int, int]:
-    """Retorna (susceptibles, infectados, recuperados)."""
+def apply_vaccinated(
+    estado: np.ndarray,
+    timer_inf: np.ndarray,
+    vaccination_rate: float
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Aplica vacunación a agentes susceptibles."""
+    nuevo_estado = estado.copy()
+    nuevo_timer = timer_inf.copy()
+    susceptible_mask = (estado == STATE_SUSCEPTIBLE)
+    susceptible_indices = np.where(susceptible_mask)[0]
+    
+    n_vaccinate = int(len(susceptible_indices) * vaccination_rate)
+    if n_vaccinate > 0:
+        indices_vaccinate = rng.choice(susceptible_indices, n_vaccinate, replace=False)
+        nuevo_estado[indices_vaccinate] = STATE_VACCINATED
+        nuevo_timer[indices_vaccinate] = 0
+    
+    return nuevo_estado, nuevo_timer
+
+
+def apply_deaths(
+    estado: np.ndarray,
+    timer_inf: np.ndarray,
+    mortality_rate: float
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Aplica mortalidad a agentes infectados."""
+    nuevo_estado = estado.copy()
+    nuevo_timer = timer_inf.copy()
+    
+    infected_mask = (estado == STATE_INFECTED)
+    infected_indices = np.where(infected_mask)[0]
+    
+    n_deaths = int(len(infected_indices) * mortality_rate)
+    if n_deaths > 0:
+        indices_deaths = rng.choice(infected_indices, n_deaths, replace=False)
+        nuevo_estado[indices_deaths] = STATE_DEAD
+        nuevo_timer[indices_deaths] = 0
+    
+    return nuevo_estado, nuevo_timer
+
+
+def get_sirvd_counts(estado: np.ndarray) -> Tuple[int, int, int, int, int]:
+    """Retorna (susceptibles, infectados, recuperados, vacunados, muertos)."""
     s = int(np.sum(estado == STATE_SUSCEPTIBLE))
     i = int(np.sum(estado == STATE_INFECTED))
     r = int(np.sum(estado == STATE_RECOVERED))
+    v = int(np.sum(estado == STATE_VACCINATED))
+    d = int(np.sum(estado == STATE_DEAD))
+    return s, i, r, v, d
+
+
+def get_sir_counts(estado: np.ndarray) -> Tuple[int, int, int]:
+    """Retorna (susceptibles, infectados, recuperados). [Deprecated: usar get_sirvd_counts]"""
+    s, i, r, _, _ = get_sirvd_counts(estado)
     return s, i, r
+

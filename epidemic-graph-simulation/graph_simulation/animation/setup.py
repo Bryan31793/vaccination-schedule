@@ -39,7 +39,7 @@ def setup_world_panel(
     ax.set_ylim(0, p.height)
     ax.set_aspect("equal")
     ax.axis("off")
-    ax.set_title("Movimiento de agentes (grafo dinámico)",
+    ax.set_title("Representacion grafica",
                  color="white", fontsize=13, fontweight="bold", pad=10)
     
     # Borde del mundo
@@ -87,9 +87,9 @@ def setup_sir_panel(
     ax: plt.Axes,
     p: SimulationParams,
     c: Colors,
-    sir_vals: List[Tuple[int, int, int]]
+    sir_vals: List[Tuple[int, int, int, int, int]]
 ) -> dict:
-    """Configura el panel SIR."""
+    """Configura el panel SIRVD."""
     ax.set_facecolor(c.background)
     for spine in ax.spines.values():
         spine.set_edgecolor(c.grid)
@@ -98,7 +98,7 @@ def setup_sir_panel(
     ax.set_ylim(0, p.n_agents)
     ax.set_xlabel("Paso de tiempo", color="#AAAAAA", fontsize=10)
     ax.set_ylabel("Individuos", color="#AAAAAA", fontsize=10)
-    ax.set_title("Curvas SIR", color="white", fontsize=13,
+    ax.set_title("Curvas SIRVD", color="white", fontsize=13,
                  fontweight="bold", pad=10)
     ax.grid(color="#1E2A3A", lw=0.5, alpha=0.6)
     
@@ -106,6 +106,8 @@ def setup_sir_panel(
     S_vals = [x[0] for x in sir_vals]
     I_vals = [x[1] for x in sir_vals]
     R_vals = [x[2] for x in sir_vals]
+    V_vals = [x[3] for x in sir_vals]
+    D_vals = [x[4] for x in sir_vals]
     taxis = list(range(len(sir_vals)))
     peak = int(np.argmax(I_vals))
     
@@ -113,9 +115,15 @@ def setup_sir_panel(
     ax.fill_between(taxis, S_vals, color=c.susceptible, alpha=0.07)
     ax.fill_between(taxis, I_vals, color=c.infected, alpha=0.07)
     ax.fill_between(taxis, R_vals, color=c.recovered, alpha=0.07)
+    ax.fill_between(taxis, V_vals, color=c.vaccinated, alpha=0.07)
+    ax.fill_between(taxis, D_vals, color=c.dead, alpha=0.07)
+    
     ax.plot(taxis, S_vals, color=c.susceptible, lw=1, alpha=0.2)
     ax.plot(taxis, I_vals, color=c.infected, lw=1, alpha=0.2)
     ax.plot(taxis, R_vals, color=c.recovered, lw=1, alpha=0.2)
+    ax.plot(taxis, V_vals, color=c.vaccinated, lw=1, alpha=0.2)
+    ax.plot(taxis, D_vals, color=c.dead, lw=1, alpha=0.2)
+    
     ax.axvline(peak, color=c.infected, lw=1, ls="--", alpha=0.4)
     ax.text(peak + 0.5, p.n_agents * 0.97, f"Pico t={peak}",
             color=c.infected, fontsize=8, va="top")
@@ -124,9 +132,14 @@ def setup_sir_panel(
     line_s, = ax.plot([], [], color=c.susceptible, lw=2.5, label="Susceptibles", zorder=5)
     line_i, = ax.plot([], [], color=c.infected, lw=2.5, label="Infectados", zorder=5)
     line_r, = ax.plot([], [], color=c.recovered, lw=2.5, label="Recuperados", zorder=5)
+    line_v, = ax.plot([], [], color=c.vaccinated, lw=2.5, label="Vacunados", zorder=5)
+    line_d, = ax.plot([], [], color=c.dead, lw=2.5, label="Fallecidos", zorder=5)
+    
     dot_s = ax.plot([], [], "o", color=c.susceptible, ms=6, zorder=6)[0]
     dot_i = ax.plot([], [], "o", color=c.infected, ms=6, zorder=6)[0]
     dot_r = ax.plot([], [], "o", color=c.recovered, ms=6, zorder=6)[0]
+    dot_v = ax.plot([], [], "o", color=c.vaccinated, ms=6, zorder=6)[0]
+    dot_d = ax.plot([], [], "o", color=c.dead, ms=6, zorder=6)[0]
     
     ax.legend(loc="upper right", facecolor=c.text_bg, edgecolor=c.grid,
               labelcolor="white", fontsize=9, framealpha=0.92)
@@ -136,12 +149,18 @@ def setup_sir_panel(
         'line_s': line_s,
         'line_i': line_i,
         'line_r': line_r,
+        'line_v': line_v,
+        'line_d': line_d,
         'dot_s': dot_s,
         'dot_i': dot_i,
         'dot_r': dot_r,
+        'dot_v': dot_v,
+        'dot_d': dot_d,
         'S_vals': S_vals,
         'I_vals': I_vals,
         'R_vals': R_vals,
+        'V_vals': V_vals,
+        'D_vals': D_vals,
         'taxis': taxis,
         'peak': peak
     }
