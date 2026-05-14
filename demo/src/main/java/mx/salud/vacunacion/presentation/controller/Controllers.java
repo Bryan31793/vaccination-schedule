@@ -4,14 +4,20 @@ import jakarta.validation.Valid;
 import mx.salud.vacunacion.application.usecase.PacienteYCatalogoServices;
 import mx.salud.vacunacion.domain.model.Vacuna;
 import mx.salud.vacunacion.domain.port.in.Puertos;
+import mx.salud.vacunacion.domain.port.out.Repositorios;
 import mx.salud.vacunacion.domain.service.VacunacionException;
+import mx.salud.vacunacion.infrastructure.persistence.RepositoryAdapters;
 import mx.salud.vacunacion.presentation.dto.Dtos;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Cinco controladores REST agrupados por dominio funcional.
@@ -245,6 +251,166 @@ public final class Controllers {
             var respuesta = consultarChatbot.procesar(
                     new Puertos.ConsultarChatbot.Mensaje(req.mensaje()));
             return new Dtos.ChatbotMensajeResponse(respuesta.texto());
+        }
+    }
+
+    // ── 9. Portal del Ciudadano ───────────────────────────────────────────────
+
+    @RestController
+    @RequestMapping("/api/ciudadano")
+    public static class CiudadanoController {
+
+        private final Puertos.RegistrarCiudadano  registrarCiudadano;
+        private final Puertos.LoginCiudadano      loginCiudadano;
+        private final Puertos.ConsultarPaciente   consultarPaciente;
+        private final Puertos.ConsultarHistorial  consultarHistorial;
+
+        public CiudadanoController(Puertos.RegistrarCiudadano registrarCiudadano,
+                                   Puertos.LoginCiudadano loginCiudadano,
+                                   Puertos.ConsultarPaciente consultarPaciente,
+                                   Puertos.ConsultarHistorial consultarHistorial) {
+            this.registrarCiudadano = registrarCiudadano;
+            this.loginCiudadano     = loginCiudadano;
+            this.consultarPaciente  = consultarPaciente;
+            this.consultarHistorial = consultarHistorial;
+        }
+
+        @PostMapping("/registro")
+        public ResponseEntity<Dtos.TokenResponse> registro(
+                @Valid @RequestBody Dtos.RegistroCiudadanoRequest req) {
+            var cmd = new Puertos.RegistrarCiudadano.Comando(
+                    req.curp().toUpperCase(),
+                    req.password(),
+                    req.nombre(),
+                    req.apellidoPaterno(),
+                    req.apellidoMaterno(),
+                    req.fechaNacimiento().toString(),
+                    req.sexo(),
+                    req.municipio(),
+                    req.estado());
+            var res = registrarCiudadano.ejecutar(cmd);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(new Dtos.TokenResponse(res.token(), res.curp(), res.nombreCompleto(), null));
+        }
+
+        @PostMapping("/login")
+        public Dtos.TokenResponse login(
+                @Valid @RequestBody Dtos.LoginCiudadanoRequest req) {
+            var cmd = new Puertos.LoginCiudadano.Comando(req.curp().toUpperCase(), req.password());
+            var res = loginCiudadano.ejecutar(cmd);
+            return new Dtos.TokenResponse(res.token(), res.curp(), res.nombreCompleto(), res.expiracion());
+        }
+
+        @GetMapping("/perfil")
+        public Dtos.PacienteResponse perfil(Authentication auth) {
+            String curp = auth.getName();
+            return consultarPaciente.porCurp(curp)
+                    .map(Dtos.PacienteResponse::fromDomain)
+                    .orElseThrow(() -> new VacunacionException.PacienteNoEncontrado(curp));
+        }
+
+        @GetMapping("/historial")
+        public Dtos.HistorialResponse historial(Authentication auth) {
+            String curp = auth.getName();
+            var h = consultarHistorial.porCurp(curp);
+            var aplicadas  = h.registros().stream()
+                    .map(Dtos.RegistroVacunacionResponse::fromDomain).toList();
+            var pendientes = h.vacunasPendientes().stream()
+                    .map(Dtos.VacunaResponse::fromDomain).toList();
+            return new Dtos.HistorialResponse(
+                    Dtos.PacienteResponse.fromDomain(h.paciente()),
+                    aplicadas, pendientes,
+                    aplicadas.size(), pendientes.size());
+        }
+    }
+
+    // ── 10. Auth Médico ───────────────────────────────────────────────────────
+
+    @RestController
+    @RequestMapping("/api/auth/medico")
+    public static class AuthMedicoController {
+
+        private final Puertos.RegistrarMedico registrarMedico;
+        private final Puertos.LoginMedico     loginMedico;
+
+        public AuthMedicoController(Puertos.RegistrarMedico registrarMedico,
+                                    Puertos.LoginMedico loginMedico) {
+            this.registrarMedico = registrarMedico;
+            this.loginMedico     = loginMedico;
+        }
+
+        @PostMapping("/registro")
+        public ResponseEntity<Dtos.MedicoTokenResponse> registro(
+                @Valid @RequestBody Dtos.RegistroMedicoRequest req) {
+            var cmd = new Puertos.RegistrarMedico.Comando(
+                    req.nombreCompleto(), req.cedulaProfesional(),
+                    req.password(), req.rol());
+            var res = registrarMedico.ejecutar(cmd);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(new Dtos.MedicoTokenResponse(
+                            res.token(), res.nombreCompleto(),
+                            res.cedulaProfesional(), res.rol()));
+        }
+
+        @PostMapping("/login")
+        public Dtos.MedicoTokenResponse login(
+                @Valid @RequestBody Dtos.LoginMedicoRequest req) {
+            var cmd = new Puertos.LoginMedico.Comando(
+                    req.cedulaProfesional(), req.password());
+            var res = loginMedico.ejecutar(cmd);
+            return new Dtos.MedicoTokenResponse(
+                    res.token(), res.nombreCompleto(),
+                    res.cedulaProfesional(), res.rol());
+        }
+
+        @GetMapping("/perfil")
+        public Dtos.MedicoTokenResponse perfil(Authentication auth) {
+            // Devuelve info básica del token activo (subject = cédula)
+            String cedula = auth.getName();
+            String rol    = auth.getAuthorities().iterator().next()
+                                .getAuthority().replace("ROLE_", "");
+            return new Dtos.MedicoTokenResponse(null, null, cedula, rol);
+        }
+    }
+
+    // ── 11. Dashboard ─────────────────────────────────────────────────────────
+
+    @RestController
+    @RequestMapping("/api/dashboard")
+    public static class DashboardController {
+
+        private final Repositorios.PacienteRepository           pacienteRepo;
+        private final Repositorios.VacunaRepository             vacunaRepo;
+        private final Repositorios.AlertaBroteRepository        broteRepo;
+        private final RepositoryAdapters.RegistroVacunacionJpaRepository registroJpa;
+
+        public DashboardController(
+                Repositorios.PacienteRepository pacienteRepo,
+                Repositorios.VacunaRepository vacunaRepo,
+                Repositorios.AlertaBroteRepository broteRepo,
+                RepositoryAdapters.RegistroVacunacionJpaRepository registroJpa) {
+            this.pacienteRepo = pacienteRepo;
+            this.vacunaRepo   = vacunaRepo;
+            this.broteRepo    = broteRepo;
+            this.registroJpa  = registroJpa;
+        }
+
+        @GetMapping("/resumen")
+        public Map<String, Object> resumen() {
+            LocalDateTime inicioDia = LocalDate.now().atStartOfDay();
+            LocalDateTime finDia    = inicioDia.plusDays(1).minusNanos(1);
+
+            long totalPacientes      = pacienteRepo.buscarTodos().size();
+            long totalVacunas        = vacunaRepo.buscarTodas().size();
+            long vacunasAplicadasHoy = registroJpa.countByFechaAplicacionBetween(inicioDia, finDia);
+            long alertasActivas      = broteRepo.buscarActivas().size();
+
+            return Map.of(
+                "totalPacientes",      totalPacientes,
+                "totalVacunas",        totalVacunas,
+                "vacunasAplicadasHoy", vacunasAplicadasHoy,
+                "alertasActivas",      alertasActivas
+            );
         }
     }
 }

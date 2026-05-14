@@ -1,7 +1,9 @@
 package mx.salud.vacunacion.domain.port.out;
 
 import mx.salud.vacunacion.domain.model.AlertaBrote;
+import mx.salud.vacunacion.domain.model.CredencialCiudadano;
 import mx.salud.vacunacion.domain.model.Paciente;
+import mx.salud.vacunacion.domain.model.PersonalMedico;
 import mx.salud.vacunacion.domain.model.RegistroVacunacion;
 import mx.salud.vacunacion.domain.model.Vacuna;
 import mx.salud.vacunacion.domain.event.BroteDetectadoEvent;
@@ -91,5 +93,21 @@ public final class Repositorios {
 
     public interface ChatbotPort {
         String procesarMensaje(String mensaje);
+    }
+
+    // ── 10. Repositorio de Credenciales de Ciudadano ──────────────────────────
+
+    public interface CredencialCiudadanoRepository {
+        CredencialCiudadano guardar(CredencialCiudadano credencial);
+        Optional<CredencialCiudadano> buscarPorCurp(String curp);
+        boolean existePorCurp(String curp);
+    }
+
+    // ── 11. Repositorio de Personal Médico ────────────────────────────────────
+
+    public interface PersonalMedicoRepository {
+        PersonalMedico guardar(PersonalMedico medico);
+        Optional<PersonalMedico> buscarPorCedula(String cedulaProfesional);
+        boolean existePorCedula(String cedulaProfesional);
     }
 }

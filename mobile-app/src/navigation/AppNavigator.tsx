@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -11,6 +11,8 @@ import type {
   PacientesStackParamList,
   BrotesStackParamList,
 } from './types';
+import { useMedicoAuth } from '../context/MedicoAuthContext';
+import { MedicoAuthNavigator } from './MedicoAuthNavigator';
 
 // ── Screens ──────────────────────────────────────────────────────────
 import { HomeScreen } from '../screens/Home/HomeScreen';
@@ -22,6 +24,7 @@ import { VacunarScreen } from '../screens/Vacunar/VacunarScreen';
 import { BrotesScreen } from '../screens/Brotes/BrotesScreen';
 import { AsistenteIAScreen } from '../screens/Brotes/AsistenteIAScreen';
 import { SimulacionScreen } from '../screens/Simulacion/SimulacionScreen';
+import { PerfilScreen }    from '../screens/Perfil/PerfilScreen';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
@@ -39,6 +42,17 @@ const HomeStackNavigator = () => (
       options={{
         headerShown: true,
         headerTitle: 'Asistente IA',
+        headerTintColor: colors.primary[600],
+        headerStyle: { backgroundColor: colors.background.primary },
+        headerShadowVisible: false,
+      }}
+    />
+    <HomeStack.Screen
+      name="Perfil"
+      component={PerfilScreen}
+      options={{
+        headerShown: true,
+        headerTitle: 'Mi Perfil',
         headerTintColor: colors.primary[600],
         headerStyle: { backgroundColor: colors.background.primary },
         headerShadowVisible: false,
@@ -101,16 +115,14 @@ const tabIcons: Record<
   Home: { focused: 'home', unfocused: 'home-outline' },
   Pacientes: { focused: 'people', unfocused: 'people-outline' },
   Vacunar: { focused: 'medkit', unfocused: 'medkit-outline' },
-  Brotes: { focused: 'warning', unfocused: 'warning-outline' },
+  Brotes:     { focused: 'warning',     unfocused: 'warning-outline' },
   Simulacion: { focused: 'stats-chart', unfocused: 'stats-chart-outline' },
 };
 
-// ── Main Navigator ───────────────────────────────────────────────────
+// ── Tab Navigator ────────────────────────────────────────────────────
 
-export const AppNavigator = () => {
-  return (
-    <NavigationContainer>
-      <Tab.Navigator
+const MedicoTabNavigator = () => (
+  <Tab.Navigator
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarIcon: ({ focused, color }) => {
@@ -158,6 +170,24 @@ export const AppNavigator = () => {
           options={{ tabBarLabel: 'Simulación' }}
         />
       </Tab.Navigator>
+);
+
+// ── Main Navigator ───────────────────────────────────────────────────
+
+export const AppNavigator = () => {
+  const { isAuthenticated, isLoading } = useMedicoAuth();
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingWrap}>
+        <ActivityIndicator size="large" color={colors.primary[500]} />
+      </View>
+    );
+  }
+
+  return (
+    <NavigationContainer>
+      {isAuthenticated ? <MedicoTabNavigator /> : <MedicoAuthNavigator />}
     </NavigationContainer>
   );
 };
@@ -189,5 +219,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 6,
     marginBottom: -4,
+  },
+  loadingWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background.primary,
   },
 });

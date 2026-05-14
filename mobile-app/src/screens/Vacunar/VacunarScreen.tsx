@@ -4,12 +4,11 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Alert,
   Modal,
   TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -51,10 +50,12 @@ export const VacunarScreen: React.FC<VacunarScreenProps> = () => {
       setShowSuccess(true);
     },
     onError: (error: any) => {
-      Alert.alert(
-        'Error',
-        error.response?.data?.mensaje || 'Error al registrar la vacunación.'
-      );
+      Toast.show({
+        type: 'error',
+        text1: 'Error al vacunar',
+        text2: error.response?.data?.mensaje || 'Error al registrar la vacunación.',
+        visibilityTime: 4000,
+      });
     },
   });
 
@@ -94,15 +95,13 @@ export const VacunarScreen: React.FC<VacunarScreenProps> = () => {
 
   return (
     <ScreenWrapper>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
+      <KeyboardAwareScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid
+        extraScrollHeight={24}
       >
-        <ScrollView
-          style={styles.container}
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-        >
           <Text style={styles.title}>Aplicar Vacuna</Text>
           <Text style={styles.subtitle}>
             Registra una nueva aplicación de vacuna
@@ -198,8 +197,7 @@ export const VacunarScreen: React.FC<VacunarScreenProps> = () => {
             icon={<Ionicons name="checkmark-done" size={20} color="#FFF" />}
             style={{ marginTop: 8 }}
           />
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
 
       {/* Vaccine Picker Modal */}
       <Modal visible={showPicker} transparent animationType="slide">

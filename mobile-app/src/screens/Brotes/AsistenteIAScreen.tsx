@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -15,47 +15,30 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useMutation } from '@tanstack/react-query';
 import { chatbotApi } from '../../api/endpoints/chatbot';
 import { colors, typography, borderRadius, shadows } from '../../theme';
+import { useChat, ChatMessage } from '../../context/ChatContext';
 import type { AsistenteIAScreenProps } from '../../navigation/types';
 
-interface ChatMessage {
-  id: string;
-  text: string;
-  isUser: boolean;
-}
-
 export const AsistenteIAScreen: React.FC<AsistenteIAScreenProps> = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: '0',
-      text: '¡Hola! 👋 Soy tu asistente de vacunación con IA. Puedo responder preguntas sobre esquemas de vacunación, efectos secundarios, pacientes registrados y más. ¿En qué puedo ayudarte?',
-      isUser: false,
-    },
-  ]);
+  const { messages, addMessage } = useChat();
   const [input, setInput] = useState('');
   const flatListRef = useRef<FlatList>(null);
 
   const mutation = useMutation({
     mutationFn: chatbotApi.enviarMensaje,
     onSuccess: (data) => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now().toString(),
-          text: data.respuesta,
-          isUser: false,
-        },
-      ]);
+      addMessage({
+        id: Date.now().toString(),
+        text: data.respuesta,
+        isUser: false,
+      });
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     },
     onError: () => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now().toString(),
-          text: 'No se pudo conectar con el asistente. Verifica que el servidor y Ollama estén corriendo.',
-          isUser: false,
-        },
-      ]);
+      addMessage({
+        id: Date.now().toString(),
+        text: 'No se pudo conectar con el asistente. Verifica que el servidor y Ollama estén corriendo.',
+        isUser: false,
+      });
     },
   });
 
@@ -63,10 +46,7 @@ export const AsistenteIAScreen: React.FC<AsistenteIAScreenProps> = () => {
     const texto = input.trim();
     if (!texto || mutation.isPending) return;
 
-    setMessages((prev) => [
-      ...prev,
-      { id: Date.now().toString(), text: texto, isUser: true },
-    ]);
+    addMessage({ id: Date.now().toString(), text: texto, isUser: true });
     mutation.mutate({ mensaje: texto });
     setInput('');
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);

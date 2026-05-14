@@ -1,57 +1,39 @@
 import axios from 'axios';
 import { Platform } from 'react-native';
+import { storage } from '../utils/secureStorage';
+import { triggerLogout } from '../context/MedicoAuthContext';
 
-// En Android emulator usa 10.0.2.2, en iOS simulator usa localhost
-const getBaseUrl = () => {
-  if (__DEV__) {
-    return Platform.select({
-      android: 'http://10.0.2.2:8080',
-      ios: 'http://localhost:8080',
-      default: 'http://localhost:8080',
-    });
-  }
-  return 'http://localhost:8080'; // Cambiar por URL de producción
-};
-
-const apiClient = axios.create({
-  baseURL: getBaseUrl(),
-  timeout: 15000,
-  headers: {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
-  },
+const BASE_URL = Platform.select({
+  android: 'http://10.0.2.2:8080',
+  ios:     'http://localhost:8080',
+  default: 'http://localhost:8080',
 });
 
-// Credenciales por defecto (admin tiene todos los permisos)
-let currentCredentials = {
-  username: 'admin',
-  password: 'admin123',
-};
+const apiClient = axios.create({
+  baseURL: BASE_URL,
+  timeout: 15000,
+  headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+});
 
-export const setCredentials = (username: string, password: string) => {
-  currentCredentials = { username, password };
-};
-
-export const getAuthHeader = () => {
-  const { username, password } = currentCredentials;
-  return `Basic ${btoa(`${username}:${password}`)}`;
-};
-
-// Interceptor para inyectar HTTP Basic Auth en cada request
-apiClient.interceptors.request.use((config) => {
-  config.headers.Authorization = getAuthHeader();
+// Interceptor de request: inyecta el JWT del médico si existe
+apiClient.interceptors.request.use(async (config) => {
+  const token = await storage.getToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 
-// Interceptor para manejar errores globalmente
+// Interceptor de response: cierra sesión en 401 solo si hay sesión activa
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    if (error.response?.status === 401) {
+      const token = await storage.getToken();
+      if (token) triggerLogout();
+    }
     if (error.response) {
-      console.error(
-        `API Error [${error.response.status}]:`,
-        error.response.data
-      );
+      console.error(`API Error [${error.response.status}]:`, error.response.data);
     } else if (error.request) {
       console.error('Network Error: No response received');
     }

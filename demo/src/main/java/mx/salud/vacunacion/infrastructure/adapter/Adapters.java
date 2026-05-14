@@ -146,22 +146,22 @@ public final class Adapters {
         private static final String MODEL = "llama3.2";
 
         private static final String DB_SCHEMA = """
-                Base de datos MySQL del sistema de vacunación de adultos.
+                Base de datos H2 (compatible SQL) del sistema de vacunación de adultos.
+
+                vacunas(id, nombre, fabricante, categoria, numero_dosis, descripcion)
+                  -- categorias posibles: INFLUENZA, COVID19, HEPATITIS_B, HEPATITIS_A, TETANOS_DIFTERIA,
+                  --                      NEUMOCOCO, VPH, FIEBRE_AMARILLA, MENINGOCOCO, SARAMPION_RUBEOLA_PAPERAS
 
                 pacientes(id, curp, nombre, apellido_paterno, apellido_materno, fecha_nacimiento, sexo, municipio, estado)
 
-                vacunas(id, nombre, fabricante, categoria, numero_dosis, descripcion)
-                  -- categorias: INFLUENZA, COVID19, HEPATITIS_B, HEPATITIS_A, TETANOS_DIFTERIA,
-                  --             NEUMOCOCO, VPH, FIEBRE_AMARILLA, MENINGOCOCO, SARAMPION_RUBEOLA_PAPERAS
-
                 registros_vacunacion(id, paciente_id, vacuna_id, numero_dosis, lote, unidad_aplicadora,
-                                     observaciones, fecha_aplicacion, estado, fecha_creacion)
+                                     observaciones, fecha_aplicacion, estado)
                   -- estado: PENDIENTE, APLICADA, CANCELADA
                   -- paciente_id referencia pacientes.id, vacuna_id referencia vacunas.id
 
-                alertas_brote(id, vacuna_id, region, casos_detectados, nivel_alerta,
-                              fecha_inicio, fecha_fin, atendida)
-                  -- nivel_alerta: INFORMATIVO, MODERADO, CRITICO
+                alertas_brote(id, categoria_vacuna, region, casos_detectados, umbral_activacion, nivel, fecha_deteccion, atendida)
+                  -- nivel: INFORMATIVO, MODERADO, CRITICO
+                  -- categoria_vacuna usa los mismos valores que vacunas.categoria
                 """;
 
         private final JdbcTemplate jdbcTemplate;
@@ -170,6 +170,29 @@ public final class Adapters {
         public ChatbotAdapter(JdbcTemplate jdbcTemplate) {
             this.jdbcTemplate = jdbcTemplate;
             this.restClient = RestClient.create();
+        }
+
+        // Consultas seguras de respaldo cuando el SQL generado falla
+        private static final java.util.Map<String, String> FALLBACK_QUERIES = java.util.Map.of(
+            "vacun",    "SELECT nombre, fabricante, categoria FROM vacunas ORDER BY categoria",
+            "paciente", "SELECT COUNT(*) AS total_pacientes FROM pacientes",
+            "brote",    "SELECT region, nivel, casos_detectados FROM alertas_brote WHERE atendida = FALSE",
+            "alerta",   "SELECT region, nivel, casos_detectados FROM alertas_brote WHERE atendida = FALSE",
+            "registro", "SELECT COUNT(*) AS total_registros FROM registros_vacunacion WHERE estado = 'APLICADA'"
+        );
+
+        private String intentarFallback(String mensaje) {
+            String lower = mensaje.toLowerCase();
+            for (var entry : FALLBACK_QUERIES.entrySet()) {
+                if (lower.contains(entry.getKey())) {
+                    String resultado = ejecutarSql(entry.getValue());
+                    if (!resultado.startsWith("Error")) {
+                        log.info("[Chatbot] Fallback exitoso con query de respaldo para keyword: {}", entry.getKey());
+                        return responderConResultado(mensaje, entry.getValue(), resultado);
+                    }
+                }
+            }
+            return responderGeneral(mensaje);
         }
 
         @Override
@@ -184,12 +207,18 @@ public final class Adapters {
                 String sql = limpiarSql(generarSql(mensaje));
                 if (!esSqlSeguro(sql)) {
                     log.warn("[Chatbot] SQL no seguro rechazado: {}", sql);
-                    return responderGeneral(mensaje);
+                    return intentarFallback(mensaje);
                 }
 
                 log.info("[Chatbot] SQL generado: {}", sql);
                 String resultado = ejecutarSql(sql);
                 log.debug("[Chatbot] Resultado BD: {}", resultado);
+
+                // Si la ejecución falló, intentar con una consulta de respaldo conocida
+                if (resultado.startsWith("Error")) {
+                    log.warn("[Chatbot] SQL falló, intentando fallback para: {}", mensaje);
+                    return intentarFallback(mensaje);
+                }
 
                 return responderConResultado(mensaje, sql, resultado);
 
@@ -199,22 +228,60 @@ public final class Adapters {
             }
         }
 
+        // Palabras clave que indican que la pregunta requiere consultar la BD
+        private static final java.util.List<String[]> SQL_KEYWORD_PAIRS = java.util.List.of(
+            new String[]{"vacun"},          // cualquier mención de vacunas/vacunación
+            new String[]{"paciente"},       // pacientes del sistema
+            new String[]{"dosis", "aplic"}, // dosis aplicadas
+            new String[]{"registro"},       // registros de vacunación
+            new String[]{"alerta", "brote"},// alertas o brotes
+            new String[]{"cuánto", "total"},// conteos
+            new String[]{"catálogo", "catalogo"},
+            new String[]{"sistema", "disponibl"} // datos del sistema
+        );
+
+        private boolean contieneKeywordsSql(String texto) {
+            String lower = texto.toLowerCase();
+            for (String[] grupo : SQL_KEYWORD_PAIRS) {
+                boolean todosPresentes = java.util.Arrays.stream(grupo).allMatch(lower::contains);
+                if (todosPresentes) return true;
+            }
+            return false;
+        }
+
         private boolean detectarNecesidadSql(String pregunta) {
+            // Pre-filtro por palabras clave para frases informales / cortas
+            if (contieneKeywordsSql(pregunta)) {
+                return true;
+            }
+            // Clasificador LLM para casos ambiguos
             String respuesta = llamarOllama(
                     """
-                    Eres un clasificador. Responde ÚNICAMENTE con "SI" o "NO", sin ningún otro texto.
-                    Responde "SI" si la pregunta requiere consultar datos de pacientes, vacunas, registros o alertas.
-                    Responde "NO" si es una pregunta general que no necesita datos de la base de datos.
+                    Eres un clasificador para un sistema hospitalario de vacunación. Responde ÚNICAMENTE "SI" o "NO", sin más texto.
+
+                    Responde "SI" si la pregunta es sobre datos ESPECÍFICOS del sistema (catálogo, registros, pacientes, alertas):
+                    - Qué vacunas hay en el catálogo / cuáles están disponibles / cuántas hay
+                    - Cuántos pacientes hay registrados o sus datos
+                    - Cuántas dosis o vacunas se han aplicado
+                    - Qué alertas de brote hay activas
+                    - Conteos, listados o estadísticas de la base de datos
+
+                    Responde "NO" solo si es una pregunta de conocimiento médico general que no depende de los datos del sistema.
+
+                    Ejemplos "SI": "¿qué vacunas hay disponibles?", "¿cuántos pacientes están registrados?", "¿cuántas dosis de influenza se aplicaron?", "lista las vacunas del catálogo", "¿hay alertas activas?"
+                    Ejemplos "NO": "¿cómo funciona la vacuna contra la influenza?", "¿qué es el COVID-19?", "explícame qué es la hepatitis"
                     """,
-                    "¿Requiere datos de BD? Pregunta: " + pregunta);
+                    "¿Requiere consultar la base de datos? Pregunta: " + pregunta);
             return respuesta.trim().toUpperCase().contains("SI");
         }
 
         private String generarSql(String pregunta) {
             return llamarOllama(
-                    "Eres experto en SQL para MySQL. Genera ÚNICAMENTE la consulta SQL sin explicaciones ni markdown.\n"
-                    + "Solo responde con el SQL puro, empezando con SELECT y terminando con punto y coma.\n"
-                    + "Solo puedes usar SELECT. Schema:\n" + DB_SCHEMA,
+                    "Eres experto en SQL. Genera ÚNICAMENTE la consulta SQL, sin explicaciones, sin markdown, sin bloques de código.\n"
+                    + "Responde solo con el SQL que empieza en SELECT. Solo puedes usar SELECT.\n"
+                    + "IMPORTANTE: usa EXACTAMENTE los nombres de columna y valores de enum del schema. No inventes columnas ni valores.\n"
+                    + "Para preguntas sobre vacunas disponibles o catálogo, usa SIEMPRE: SELECT nombre, fabricante, categoria FROM vacunas;\n"
+                    + "Schema de la base de datos:\n" + DB_SCHEMA,
                     pregunta);
         }
 
@@ -230,11 +297,16 @@ public final class Adapters {
         private String responderConResultado(String pregunta, String sql, String resultado) {
             return llamarOllama(
                     """
-                    Eres un asistente del sistema de vacunación. Responde en español de forma amigable.
-                    Se te da una pregunta y el resultado de una consulta SQL. Formula una respuesta clara.
+                    Eres un asistente del sistema de vacunación. Responde en español de forma clara y amigable.
+                    Se te proporciona el resultado EXACTO de una consulta a la base de datos del sistema.
+                    REGLAS IMPORTANTES:
+                    - Usa ÚNICAMENTE los datos del resultado proporcionado. No añadas información externa.
+                    - Lista TODOS los elementos del resultado sin omitir ninguno.
+                    - Si el resultado tiene filas separadas por salto de línea, muéstralas todas.
                     """,
-                    "Pregunta: " + pregunta + "\nSQL ejecutado: " + sql
-                    + "\nResultado: " + resultado + "\n\nResponde la pregunta:");
+                    "Pregunta: " + pregunta
+                    + "\nResultado de la base de datos:\n" + resultado
+                    + "\n\nFormula una respuesta que incluya TODOS los elementos del resultado:");
         }
 
         private String limpiarSql(String texto) {

@@ -14,6 +14,7 @@ interface InputFieldProps extends TextInputProps {
   label: string;
   error?: string;
   icon?: keyof typeof Ionicons.glyphMap;
+  rightElement?: React.ReactNode;
   required?: boolean;
 }
 
@@ -21,6 +22,7 @@ export const InputField: React.FC<InputFieldProps> = ({
   label,
   error,
   icon,
+  rightElement,
   required = false,
   style,
   ...rest
@@ -66,6 +68,7 @@ export const InputField: React.FC<InputFieldProps> = ({
           onBlur={() => setIsFocused(false)}
           {...rest}
         />
+        {rightElement}
       </View>
       {error && (
         <View style={styles.errorRow}>

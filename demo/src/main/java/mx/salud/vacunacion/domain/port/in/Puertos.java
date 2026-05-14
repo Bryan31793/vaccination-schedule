@@ -86,4 +86,46 @@ public final class Puertos {
 
         Respuesta procesar(Mensaje mensaje);
     }
+
+    // ── 9. Registro de Ciudadano ──────────────────────────────────────────────
+
+    public interface RegistrarCiudadano {
+        record Comando(String curp, String password, String nombre,
+                       String apellidoPaterno, String apellidoMaterno,
+                       String fechaNacimiento, String sexo,
+                       String municipio, String estado) {}
+        record Resultado(String token, String curp, String nombreCompleto) {}
+
+        Resultado ejecutar(Comando comando);
+    }
+
+    // ── 10. Login de Ciudadano ────────────────────────────────────────────────
+
+    public interface LoginCiudadano {
+        record Comando(String curp, String password) {}
+        record Resultado(String token, String curp, String nombreCompleto, String expiracion) {}
+
+        Resultado ejecutar(Comando comando);
+    }
+
+    // ── 11. Registro de Personal Médico ───────────────────────────────────────
+
+    public interface RegistrarMedico {
+        record Comando(String nombreCompleto, String cedulaProfesional,
+                       String password, String rol) {}
+        record Resultado(String token, String nombreCompleto,
+                         String cedulaProfesional, String rol) {}
+
+        Resultado ejecutar(Comando comando);
+    }
+
+    // ── 12. Login de Personal Médico ──────────────────────────────────────────
+
+    public interface LoginMedico {
+        record Comando(String cedulaProfesional, String password) {}
+        record Resultado(String token, String nombreCompleto,
+                         String cedulaProfesional, String rol) {}
+
+        Resultado ejecutar(Comando comando);
+    }
 }

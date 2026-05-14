@@ -62,7 +62,9 @@ def setup_world_panel(
     patches = [
         mpatches.Patch(color=c.susceptible, label="Susceptible"),
         mpatches.Patch(color=c.infected, label="Infectado"),
-        mpatches.Patch(color=c.recovered, label="Recuperado")
+        mpatches.Patch(color=c.recovered, label="Recuperado"),
+        mpatches.Patch(color=c.vaccinated, label="Vacunado"),
+        mpatches.Patch(color=c.dead, label="Fallecido")
     ]
     ax.legend(handles=patches, loc="lower left",
               facecolor=c.text_bg, edgecolor=c.grid,
@@ -169,7 +171,7 @@ def setup_sir_panel(
 def add_title(fig: plt.Figure, p: SimulationParams) -> None:
     """Añade título general a la figura."""
     fig.suptitle(
-        f"SIR · Grafo Dinámico  |  N={p.n_agents}  "
+        f"SIRVD · Grafo Dinámico  |  N={p.n_agents}  "
         f"Radio={p.contact_radius}  β={p.transmission_rate}  "
         f"Dur.inf={p.infection_duration} pasos",
         color="white", fontsize=12, y=0.96

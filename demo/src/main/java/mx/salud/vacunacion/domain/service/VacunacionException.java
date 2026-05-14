@@ -13,6 +13,8 @@ public class VacunacionException extends RuntimeException {
         DOSIS_INVALIDA,
         VALIDACION_COFEPRIS_FALLIDA,
         BROTE_YA_ATENDIDO,
+        CIUDADANO_YA_REGISTRADO,
+        CREDENCIALES_INVALIDAS,
         ERROR_INTERNO
     }
 

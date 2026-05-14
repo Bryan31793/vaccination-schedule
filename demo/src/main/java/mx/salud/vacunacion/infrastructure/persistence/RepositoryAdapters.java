@@ -1,12 +1,16 @@
 package mx.salud.vacunacion.infrastructure.persistence;
 
 import mx.salud.vacunacion.domain.model.AlertaBrote;
+import mx.salud.vacunacion.domain.model.CredencialCiudadano;
 import mx.salud.vacunacion.domain.model.Paciente;
+import mx.salud.vacunacion.domain.model.PersonalMedico;
 import mx.salud.vacunacion.domain.model.RegistroVacunacion;
 import mx.salud.vacunacion.domain.model.Vacuna;
 import mx.salud.vacunacion.domain.port.out.Repositorios;
 import mx.salud.vacunacion.infrastructure.persistence.entity.AlertaBroteEntity;
+import mx.salud.vacunacion.infrastructure.persistence.entity.CredencialCiudadanoEntity;
 import mx.salud.vacunacion.infrastructure.persistence.entity.PacienteEntity;
+import mx.salud.vacunacion.infrastructure.persistence.entity.PersonalMedicoEntity;
 import mx.salud.vacunacion.infrastructure.persistence.entity.RegistroVacunacionEntity;
 import mx.salud.vacunacion.infrastructure.persistence.entity.VacunaEntity;
 
@@ -83,6 +87,8 @@ public final class RepositoryAdapters {
                 @Param("region")    String region,
                 @Param("desde")     LocalDateTime desde,
                 @Param("hasta")     LocalDateTime hasta);
+
+        long countByFechaAplicacionBetween(LocalDateTime desde, LocalDateTime hasta);
     }
 
     @Repository
@@ -246,6 +252,80 @@ public final class RepositoryAdapters {
         @Override
         public Optional<AlertaBrote> buscarPorId(String id) {
             return jpa.findById(id).map(AlertaBroteEntity::toDomain);
+        }
+    }
+
+    // ── Spring Data JPA: CredencialCiudadano ──────────────────────────────────
+
+    @Repository
+    public interface CredencialCiudadanoJpaRepository
+            extends JpaRepository<CredencialCiudadanoEntity, String> {
+        Optional<CredencialCiudadanoEntity> findByCurp(String curp);
+        boolean existsByCurp(String curp);
+    }
+
+    // ── Adapter: CredencialCiudadanoRepository ────────────────────────────────
+
+    @Component
+    public static class CredencialCiudadanoRepositoryAdapter
+            implements Repositorios.CredencialCiudadanoRepository {
+
+        private final CredencialCiudadanoJpaRepository jpa;
+
+        public CredencialCiudadanoRepositoryAdapter(CredencialCiudadanoJpaRepository jpa) {
+            this.jpa = jpa;
+        }
+
+        @Override
+        public CredencialCiudadano guardar(CredencialCiudadano credencial) {
+            return jpa.save(CredencialCiudadanoEntity.fromDomain(credencial)).toDomain();
+        }
+
+        @Override
+        public Optional<CredencialCiudadano> buscarPorCurp(String curp) {
+            return jpa.findByCurp(curp).map(CredencialCiudadanoEntity::toDomain);
+        }
+
+        @Override
+        public boolean existePorCurp(String curp) {
+            return jpa.existsByCurp(curp);
+        }
+    }
+
+    // ── Spring Data JPA: PersonalMedico ───────────────────────────────────────
+
+    @Repository
+    public interface PersonalMedicoJpaRepository
+            extends JpaRepository<PersonalMedicoEntity, String> {
+        Optional<PersonalMedicoEntity> findByCedulaProfesional(String cedula);
+        boolean existsByCedulaProfesional(String cedula);
+    }
+
+    // ── Adapter: PersonalMedicoRepository ────────────────────────────────────
+
+    @Component
+    public static class PersonalMedicoRepositoryAdapter
+            implements Repositorios.PersonalMedicoRepository {
+
+        private final PersonalMedicoJpaRepository jpa;
+
+        public PersonalMedicoRepositoryAdapter(PersonalMedicoJpaRepository jpa) {
+            this.jpa = jpa;
+        }
+
+        @Override
+        public PersonalMedico guardar(PersonalMedico medico) {
+            return jpa.save(PersonalMedicoEntity.fromDomain(medico)).toDomain();
+        }
+
+        @Override
+        public Optional<PersonalMedico> buscarPorCedula(String cedula) {
+            return jpa.findByCedulaProfesional(cedula).map(PersonalMedicoEntity::toDomain);
+        }
+
+        @Override
+        public boolean existePorCedula(String cedula) {
+            return jpa.existsByCedulaProfesional(cedula);
         }
     }
 }

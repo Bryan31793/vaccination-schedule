@@ -5,10 +5,40 @@ import type {
   NavigatorScreenParams,
 } from '@react-navigation/native';
 
+// ── Portal Médico — Auth Stack ────────────────────────────────────────────
+export type MedicoAuthParamList = {
+  LoginMedico: undefined;
+  RegistroMedico: undefined;
+};
+
+export type LoginMedicoScreenProps    = NativeStackScreenProps<MedicoAuthParamList, 'LoginMedico'>;
+export type RegistroMedicoScreenProps = NativeStackScreenProps<MedicoAuthParamList, 'RegistroMedico'>;
+
+// ── Portal del Ciudadano — Auth Stack ─────────────────────────────────────
+export type CiudadanoAuthParamList = {
+  Login: undefined;
+  Registro: undefined;
+};
+
+// ── Portal del Ciudadano — Tab Navigator ──────────────────────────────────
+export type CiudadanoTabParamList = {
+  MiSalud: undefined;
+  MiCartilla: undefined;
+  AsistenteCiudadano: undefined;
+};
+
+export type LoginScreenProps    = NativeStackScreenProps<CiudadanoAuthParamList, 'Login'>;
+export type RegistroScreenProps = NativeStackScreenProps<CiudadanoAuthParamList, 'Registro'>;
+
+export type MiSaludScreenProps       = BottomTabScreenProps<CiudadanoTabParamList, 'MiSalud'>;
+export type MiCartillaScreenProps    = BottomTabScreenProps<CiudadanoTabParamList, 'MiCartilla'>;
+export type AsistenteCiudadanoProps  = BottomTabScreenProps<CiudadanoTabParamList, 'AsistenteCiudadano'>;
+
 // ── Stack de Home ─────────────────────────────────────────────────
 export type HomeStackParamList = {
   HomeMain: undefined;
   Chatbot: undefined;
+  Perfil: undefined;
 };
 
 // ── Stack de Pacientes ────────────────────────────────────────────
@@ -34,8 +64,9 @@ export type RootTabParamList = {
 };
 
 // ── Screen Props helpers ──────────────────────────────────────────
-export type VacunarScreenProps = BottomTabScreenProps<RootTabParamList, 'Vacunar'>;
+export type VacunarScreenProps    = BottomTabScreenProps<RootTabParamList, 'Vacunar'>;
 export type SimulacionScreenProps = BottomTabScreenProps<RootTabParamList, 'Simulacion'>;
+export type PerfilScreenProps     = NativeStackScreenProps<HomeStackParamList, 'Perfil'>;
 
 export type HomeScreenProps = CompositeScreenProps<
   NativeStackScreenProps<HomeStackParamList, 'HomeMain'>,

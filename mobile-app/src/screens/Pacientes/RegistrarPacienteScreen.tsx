@@ -1,16 +1,9 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Alert,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import Toast from 'react-native-toast-message';
 import { ScreenWrapper, InputField, PrimaryButton, GlassCard } from '../../components/ui';
 import { pacientesApi } from '../../api/endpoints/pacientes';
 import { colors, typography } from '../../theme';
@@ -39,17 +32,22 @@ export const RegistrarPacienteScreen: React.FC<RegistrarPacienteScreenProps> = (
     mutationFn: pacientesApi.registrar,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pacientes'] });
-      Alert.alert(
-        '✅ Paciente Registrado',
-        'El paciente se ha registrado exitosamente.',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
+      queryClient.invalidateQueries({ queryKey: ['dashboard-resumen'] });
+      Toast.show({
+        type: 'success',
+        text1: 'Paciente registrado',
+        text2: 'El paciente se ha guardado exitosamente.',
+        visibilityTime: 2500,
+        onHide: () => navigation.goBack(),
+      });
     },
     onError: (error: any) => {
-      Alert.alert(
-        'Error',
-        error.response?.data?.mensaje || 'Ocurrió un error al registrar el paciente.'
-      );
+      Toast.show({
+        type: 'error',
+        text1: 'Error al registrar',
+        text2: error.response?.data?.mensaje || 'Ocurrió un error al registrar el paciente.',
+        visibilityTime: 4000,
+      });
     },
   });
 
@@ -77,15 +75,13 @@ export const RegistrarPacienteScreen: React.FC<RegistrarPacienteScreenProps> = (
 
   return (
     <ScreenWrapper>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
+      <KeyboardAwareScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid
+        extraScrollHeight={24}
       >
-        <ScrollView
-          style={styles.container}
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-        >
           <Text style={styles.title}>Registrar Paciente</Text>
           <Text style={styles.subtitle}>
             Completa los datos del nuevo paciente
@@ -209,8 +205,7 @@ export const RegistrarPacienteScreen: React.FC<RegistrarPacienteScreenProps> = (
             icon={<Ionicons name="checkmark-circle" size={20} color="#FFF" />}
             style={{ marginTop: 8 }}
           />
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </ScreenWrapper>
   );
 };

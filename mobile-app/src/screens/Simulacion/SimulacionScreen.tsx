@@ -5,7 +5,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { ScreenWrapper, PrimaryButton, GlassCard } from '../../components/ui';
 import { colors, typography } from '../../theme';
 import { simulacionApi } from '../../api/endpoints/simulacion';
-import { getAuthHeader } from '../../api/client';
 import { SimulacionScreenProps } from '../../navigation/types';
 
 const { width } = Dimensions.get('window');
@@ -49,7 +48,7 @@ export const SimulacionScreen = ({ navigation }: SimulacionScreenProps) => {
         <View style={styles.header}>
           <View>
             <Text style={styles.subtitle}>Modelo Epidemiológico</Text>
-            <Text style={styles.title}>Simulación SIR</Text>
+            <Text style={styles.title}>Simulación SIRVD</Text>
           </View>
           <View style={styles.iconCircle}>
             <Ionicons name="stats-chart" size={22} color={colors.primary[500]} />
@@ -58,7 +57,7 @@ export const SimulacionScreen = ({ navigation }: SimulacionScreenProps) => {
 
         <GlassCard style={styles.card}>
           <Text style={styles.description}>
-            Ejecuta un modelo SIR (Susceptibles, Infectados, Recuperados) dinámico basado en grafos para visualizar cómo se propaga una enfermedad en una población cerrada.
+            Ejecuta un modelo SIRVD (Susceptibles, Infectados, Recuperados, Vacunados, Difuntos) dinámico basado en grafos para visualizar cómo se propaga una enfermedad en una población cerrada.
           </Text>
           
           <PrimaryButton
@@ -98,7 +97,7 @@ export const SimulacionScreen = ({ navigation }: SimulacionScreenProps) => {
               />
             </View>
             <Text style={styles.videoCaption}>
-              El video muestra la interacción entre agentes y la curva SIR en tiempo real.
+              El video muestra la interacción entre agentes y la curva SIRVD en tiempo real.
             </Text>
           </View>
         )}

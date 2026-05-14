@@ -20,7 +20,9 @@ public final class Dtos {
     // ════════════════════════════════════════════════════════════════════
 
     public record RegistrarPacienteRequest(
-            @NotBlank @Size(min = 18, max = 18, message = "La CURP debe tener exactamente 18 caracteres")
+            @NotBlank
+            @Pattern(regexp = "^[A-Z]{4}\\d{6}[HM][A-Z]{5}[A-Z\\d]\\d$",
+                     message = "CURP inválida. Formato oficial: 4 letras, 6 dígitos, sexo, 5 letras, 1 alfanumérico, 1 dígito")
             String curp,
 
             @NotBlank String nombre,
@@ -61,6 +63,58 @@ public final class Dtos {
 
     public record ChatbotMensajeRequest(
             @NotBlank @Size(max = 500) String mensaje
+    ) {}
+
+    public record RegistroCiudadanoRequest(
+            @NotBlank @Size(min = 18, max = 18, message = "La CURP debe tener exactamente 18 caracteres")
+            String curp,
+
+            @NotBlank @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
+            String password,
+
+            @NotBlank String nombre,
+            @NotBlank String apellidoPaterno,
+                      String apellidoMaterno,
+
+            @NotNull @Past(message = "La fecha de nacimiento debe ser en el pasado")
+            LocalDate fechaNacimiento,
+
+            @Pattern(regexp = "[HM]", message = "Sexo debe ser H o M")
+            String sexo,
+
+            String municipio,
+            String estado
+    ) {}
+
+    public record LoginCiudadanoRequest(
+            @NotBlank @Size(min = 18, max = 18) String curp,
+            @NotBlank String password
+    ) {}
+
+    public record RegistroMedicoRequest(
+            @NotBlank String nombreCompleto,
+
+            @NotBlank
+            @Pattern(regexp = "^\\d{7,8}$",
+                     message = "La cédula profesional debe tener 7 u 8 dígitos numéricos")
+            String cedulaProfesional,
+
+            @NotBlank @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
+            String password,
+
+            String rol
+    ) {}
+
+    public record LoginMedicoRequest(
+            @NotBlank String cedulaProfesional,
+            @NotBlank String password
+    ) {}
+
+    public record MedicoTokenResponse(
+            String token,
+            String nombreCompleto,
+            String cedulaProfesional,
+            String rol
     ) {}
 
     // ════════════════════════════════════════════════════════════════════
@@ -167,6 +221,13 @@ public final class Dtos {
 
     public record ChatbotMensajeResponse(
             String respuesta
+    ) {}
+
+    public record TokenResponse(
+            String token,
+            String curp,
+            String nombreCompleto,
+            String expiracion
     ) {}
 
     public record ErrorResponse(
